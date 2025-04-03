@@ -769,9 +769,15 @@ async function main() {
         viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
         carousel = false;
     } catch (err) {}
+    /*
     const url = new URL(
         urlFiles[viewParam] || urlFiles[0],
         location.origin
+    );
+    */
+    const url = new URL(
+        "./" + (urlFiles[viewParam] || urlFiles[0]),
+        location.href
     );
     const req = await fetch(url, {
         mode: "cors", // no-cors, *cors, same-origin
