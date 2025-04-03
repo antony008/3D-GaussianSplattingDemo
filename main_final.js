@@ -776,8 +776,8 @@ async function main() {
     );
     */
     const url = new URL(
-        "./" + (urlFiles[viewParam] || urlFiles[0]),
-        location.href
+        (urlFiles[viewParam] || urlFiles[0]),
+        location.origin + location.pathname
     );
     const req = await fetch(url, {
         mode: "cors", // no-cors, *cors, same-origin
