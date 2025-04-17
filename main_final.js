@@ -755,7 +755,7 @@ const pivotDistances = {
     2: 2,    // alex_black
     3: 1.8,  // tissue
     4: 0.9,  // alex
-    5: 2,    // robox_box
+    5: 2,     // robox_box
     6: 1.85
 };
 
