@@ -186,8 +186,20 @@
 				background: #ff9d0d;
 			}
 		</style>
+
+		<style>
+			#modelSelector {
+			position: absolute;
+			top: 10px;
+			left: 10px;
+			z-index: 10;       /* 確保在 canvas 之上 */
+			padding: 4px 8px;
+			font-size: 16px;
+			}
+		</style>
 	</head>
 	<body>
+		<!--
 		<script>
 			if(location.host.includes('hf.space')) document.body.classList.add('nohf');
 		</script>
@@ -204,7 +216,8 @@
 
 			<details>
 			<summary>Use mouse or arrow keys to navigate.</summary>
-
+			-->
+<!--
 <div id="instructions">movement (arrow keys)
 - left/right arrow keys to strafe side to side
 - up/down arrow keys to move forward/back
@@ -242,7 +255,7 @@ other
 - drag and drop .ply file to convert to .splat
 - drag and drop cameras.json to load cameras
 </div>
-
+-->
 		</details>
 			
 		</div>
@@ -289,6 +302,23 @@ other
 				<button id="btnL">右旋轉</button>
 			</div>
 		</div>
+
+		<select id="modelSelector">
+			<option value="0">Blue Sheep</option>
+			<option value="1">Jayden</option>
+			<option value="2">Alex Black</option>
+			<option value="3">Tissue</option>
+			<option value="4">Alex</option>
+			<option value="5">Box</option>
+			<option value="6">Volleyball</option>
+			<option value="7">Tree</option>
+			<option value="8">Robot</option>
+			<option value="9">Pikachu</option>
+			<option value="10">Fan</option>
+			<option value="11">Chair</option>
+			<option value="12">Baseball</option>
+			<option value="13">Dragon</option>
+		</select>
 		
 		<style>
 			#controls {
