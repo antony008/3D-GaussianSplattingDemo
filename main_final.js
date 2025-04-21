@@ -780,7 +780,7 @@ const pivotDistances = {
     13: 1.9
 };
 
-const viewParam = new URLSearchParams(location.search).get("view");
+const viewParam = new URLSearchParams(location.search).get("view") || "0";
 let pivotDistance = pivotDistances[viewParam] || pivotDistances[0];
 const defaultViewMatrix = defaultViewMatrices[viewParam] || defaultViewMatrices[0];
 let viewMatrix = defaultViewMatrix;
@@ -788,8 +788,13 @@ let viewMatrix = defaultViewMatrix;
 
 async function main() {
     document.getElementById("modelSelector").addEventListener("change", (e) => {
-        const id = parseInt(e.target.value);
-        location.href = location.pathname + "?view=" + id;  // reload 用網址參數重新載入
+        const selectedId = e.target.value;
+
+        // 更新網址參數 ?view=selectedId，重新整理頁面
+        const newUrl = new URL(location.href);
+        newUrl.searchParams.set("view", selectedId);
+        newUrl.hash = ""; // 清空 hash，避免殘留視角
+        location.href = newUrl.toString(); // 強制重新載入頁面
     });
 
     let carousel = false;
@@ -806,7 +811,7 @@ async function main() {
     */
     const url = new URL(
         (urlFiles[viewParam] || urlFiles[0]),
-        location.origin + location.pathname
+        location.origin
     );
     const req = await fetch(url, {
         mode: "cors", // no-cors, *cors, same-origin
