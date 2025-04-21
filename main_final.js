@@ -787,6 +787,11 @@ let viewMatrix = defaultViewMatrix;
 
 
 async function main() {
+    document.getElementById("modelSelector").addEventListener("change", (e) => {
+        const id = parseInt(e.target.value);
+        location.href = location.pathname + "?view=" + id;  // reload 用網址參數重新載入
+    });
+    
     let carousel = false;
     const params = new URLSearchParams(location.search);
     try {
