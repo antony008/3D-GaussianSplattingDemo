@@ -9,64 +9,27 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <!-- 外部樣式表 -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles_test.css">
 </head>
 
 <body>
 <script>
     if (location.host.includes('hf.space')) document.body.classList.add('nohf');
 </script>
-
 <div id="info">
-    <h3 class="nohf">WebGL 3D Gaussian Splat Viewer</h3>
-    <p>
-        <small class="nohf">
-            By <a href="https://twitter.com/antimatter15">Kevin Kwok</a>.
-            Code on <a href="https://github.com/antimatter15/splat">Github</a>.
-        </small>
-    </p>
+    
+    <select id="objectSelect">
+        <option value="0">物體1</option>
+        <option value="1">物體2</option>
+        <option value="2">物體3</option>
+        <option value="3">物體4</option>
+        <option value="4">物體5</option>
+        <option value="5">物體6</option>
+        <option value="6">物體7</option>
+        <option value="7">物體8</option>
+    </select>
+  
 
-    <details>
-        <summary>Use mouse or arrow keys to navigate.</summary>
-        <div id="instructions">
-            movement&nbsp;(arrow&nbsp;keys)
-            - left/right arrow keys to strafe side to side
-            - up/down arrow keys to move forward/back
-            - space to jump
-
-            camera angle&nbsp;(wasd)
-            - a/d to turn camera left/right
-            - w/s to tilt camera up/down
-            - q/e to roll camera counterclockwise/clockwise
-            - i/k and j/l to orbit
-
-            trackpad
-            - scroll up/down/left/right to orbit
-            - pinch to move forward/back
-            - ctrl key + scroll to move forward/back
-            - shift + scroll to move up/down or strafe
-
-            mouse
-            - click and drag to orbit
-            - right click (or ctrl/cmd key) and drag up/down to move
-
-            touch&nbsp;(mobile)
-            - one finger to orbit
-            - two finger pinch to move forward/back
-            - two finger rotate to rotate camera clockwise/counterclockwise
-            - two finger pan to move side-to-side and up-down
-
-            gamepad
-            - if you have a game controller connected it should work
-
-            other
-            - press 0-9 to switch to one of the pre-loaded camera views
-            - press '-' or '+' key to cycle loaded cameras
-            - press p to resume default animation
-            - drag and drop .ply file to convert to .splat
-            - drag and drop cameras.json to load cameras
-        </div>
-    </details>
 </div>
 
 <div id="progress"></div>
@@ -103,6 +66,6 @@
     </div>
 </div>
 
-<script src="save.js"></script>
+<script src="main_final_test.js"></script>
 </body>
 </html>
