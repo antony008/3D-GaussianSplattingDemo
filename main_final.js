@@ -652,6 +652,14 @@ function createWorker(self) {
     };
 }
 
+function getPitchFromViewMatrix(viewMatrix) {
+    const dirX = -viewMatrix[2];
+    const dirY = -viewMatrix[6];
+    const dirZ = -viewMatrix[10];
+    const len = Math.hypot(dirX, dirY, dirZ);
+    return Math.asin(dirY / len); // 仰角（pitch）
+}
+
 const vertexShaderSource = `
 #version 300 es
 precision highp float;
@@ -797,12 +805,15 @@ const zoomLimits = {
     13: { min: 1.2, max: 2.5 },
 };
 
+
 //新加入
 let currentModelIdx = 0;                               // 目前模型
 let pivotDistance   = pivotDistances[currentModelIdx]; // 與舊變數同名
 let viewMatrix      = defaultViewMatrices[currentModelIdx];
 let minZoom = 1.0;
 let maxZoom = 5.0;
+let pitchAccumulated = 0;
+let maxPitchAccumulated = 1.5;  
 
 /*
 const viewParam = new URLSearchParams(location.search).get("view");
@@ -834,6 +845,7 @@ async function main() {
         viewMatrix      = defaultViewMatrices[idx];
         minZoom = zoomLimits[idx]?.min ?? 1.0;
         maxZoom = zoomLimits[idx]?.max ?? 5.0;
+        pitchAccumulated = 0;
 
         // 1. 抓檔
         const resp = await fetch(urlFiles[idx], {mode:"cors", credentials:"omit"});
@@ -1297,7 +1309,7 @@ async function main() {
 
     const frame = (now) => {
         let inv = invert4(viewMatrix);
-        console.log("Current: ", viewMatrix);
+        //console.log("Current: ", viewMatrix);
         let shiftKey =
             activeKeys.includes("Shift") ||
             activeKeys.includes("ShiftLeft") ||
@@ -1422,28 +1434,22 @@ async function main() {
         ) {
             let d = pivotDistance;
             inv = translate4(inv, 0, 0, d);
-            inv = rotate4(
-                inv,
-                activeKeys.includes("KeyJ")
-                    ? -0.05
-                    : activeKeys.includes("KeyL")
-                      ? 0.05
-                      : 0,
-                0,
-                1,
-                0,
-            );
-            inv = rotate4(
-                inv,
-                activeKeys.includes("KeyI")
-                    ? 0.05
-                    : activeKeys.includes("KeyK")
-                      ? -0.05
-                      : 0,
-                1,
-                0,
-                0,
-            );
+        
+            // 左右旋轉 (Yaw)
+            if (activeKeys.includes("KeyJ"))
+                inv = rotate4(inv, -0.05, 0, 1, 0);
+            if (activeKeys.includes("KeyL"))
+                inv = rotate4(inv, 0.05, 0, 1, 0);
+            console.log("pitchAccumulated:", pitchAccumulated.toFixed(2));
+            if (activeKeys.includes("KeyK") && pitchAccumulated < maxPitchAccumulated) {
+                inv = rotate4(inv, -0.05, 1, 0, 0);
+                pitchAccumulated += 0.05;
+            }
+            if (activeKeys.includes("KeyI") && pitchAccumulated > 0) {
+                inv = rotate4(inv, 0.05, 1, 0, 0);
+                pitchAccumulated -= 0.05;
+            }
+
             inv = translate4(inv, 0, 0, -d);
         }
 
