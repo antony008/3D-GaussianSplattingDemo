@@ -735,7 +735,7 @@ const defaultViewMatrices = {
     0: [-0.49077232546708727, -0.019228691684339803, 0.8685463614405777, 0, -0.8677272611296247, -0.09534116115017904, -0.48390026170997996, 0, 0.09795808258691596, -0.9976807571743622, 0.03372418745936321, -0, -0.24395347888120508, 0.3002909356245333, 2.6490756981554413, 0.9999999999999477],
     1: [0.9125937811794079, 0.08760349432242547, -0.3998727526790942, 0, -0.39910427263486664, 0.002091054198201028, -0.9148832750995736, 0, -0.07778652838626175, 1.0003286577782697, 0.03862424664826309, -0, -0.11631363745094354, -0.02598533946005314, 2.264003695398532, 1.000000000000022],
     2: [-0.08932773517060329, 0.03072722688081484, -0.9933158577499676, 0, -0.9882803570796171, -0.11594441326926787, 0.0778384791868468, 0, -0.10747379323488421, 0.9964649621647134, 0.04008694233602529, 0, -0.023398205240653162, 0.0012482364527549078, 1.9632806165604035, 0.9999999999999531],
-    3: [0.15106731734519593, 0.24401181384360127, -0.9556342921509164, 0, -0.9834604653919553, -0.022145073814080648, -0.1688641723892912, 0, -0.05662377109438208, 0.9725198637582204, 0.23895368409540674, 0, 0.07755960220418805, 0.18095428315215778, 1.797778119157294, 0.9999999999999503],
+    3: [-0.16371403990909855, 0.24401181384360218, -0.9535491323688056, 0, -0.9856157464060291, -0.022145073814080218, 0.15579215686982048, 0, 0.02308415335555547, 0.9725198637581813, 0.2444836118425324, 0, 0.005032445939958854, 0.1809542831521439, 1.7974683715373072, 0.9999999999999497],
     4: [-0.048752817887777286, -0.02565175958413814, -0.9962756395587955, 0, -0.9941083530256318, -0.07797454508090253, 0.04322675981414065, 0, -0.07319052201445585, 1.0001168515158092, -0.02257057379238654, 0, -0.08378011102473285, 0.12440372650424572, 0.7616010128734322, 0.9999999999999523],
     5: [0.1680593684704605, 0.9691588016029143, 0.16759255933623118, 0, -0.9813147153150545, 0.16407706216720447, 0.07937346645232424, 0, 0.055968370927199175, -0.17966515026371485, 0.9852349847809855, 0, -0.08092423214199776, 0.004436432692555334, 2.0342441254660555, 0.9999999999999503],
     6: [0.4537535318364559, -0.14465554413466075, 0.8768024326476676, 0, 0.8608051309076196, -0.18950082286596465, -0.46829901210241126, 0, 0.2304200523177743, 0.9753115214659807, 0.04211930181559524, -0, 0.16051806810357747, 0.4462611422302293, 2.032163673102191, 0.9999999999999484],
@@ -779,10 +779,30 @@ const pivotDistances = {
     12: 2.6,
     13: 1.9
 };
+
+const zoomLimits = {
+    0: { min: 1.2, max: 4.0 },
+    1: { min: 1.2, max: 3.5 },
+    2: { min: 1.0, max: 2.8 },
+    3: { min: 0.8, max: 2.5 },
+    4: { min: 0.5, max: 2.0 },
+    5: { min: 1.2, max: 3.0 },
+    6: { min: 0.8, max: 3.2 },
+    7: { min: 1.0, max: 2.8 },
+    8: { min: 2.0, max: 4.5 },
+    9: { min: 1.8, max: 3.5 },
+    10: { min: 1.5, max: 4.0 },
+    11: { min: 1.5, max: 3.8 },
+    12: { min: 1.0, max: 3.0 },
+    13: { min: 1.2, max: 2.5 },
+};
+
 //新加入
 let currentModelIdx = 0;                               // 目前模型
 let pivotDistance   = pivotDistances[currentModelIdx]; // 與舊變數同名
 let viewMatrix      = defaultViewMatrices[currentModelIdx];
+let minZoom = 1.0;
+let maxZoom = 5.0;
 
 /*
 const viewParam = new URLSearchParams(location.search).get("view");
@@ -809,17 +829,19 @@ async function main() {
     //新加入
     // ===================================================切換模型核心：讀新 .splat → 丟給 worker ===================================================
     async function switchModel(idx){
-    currentModelIdx = idx;
-    pivotDistance   = pivotDistances[idx];
-    viewMatrix      = defaultViewMatrices[idx];
+        currentModelIdx = idx;
+        pivotDistance   = pivotDistances[idx];
+        viewMatrix      = defaultViewMatrices[idx];
+        minZoom = zoomLimits[idx]?.min ?? 1.0;
+        maxZoom = zoomLimits[idx]?.max ?? 5.0;
 
-    // 1. 抓檔
-    const resp = await fetch(urlFiles[idx], {mode:"cors", credentials:"omit"});
-    const buf  = new Uint8Array(await resp.arrayBuffer());
+        // 1. 抓檔
+        const resp = await fetch(urlFiles[idx], {mode:"cors", credentials:"omit"});
+        const buf  = new Uint8Array(await resp.arrayBuffer());
 
-    // 2. 告訴 worker 換資料（rowLength 已在 main() 前宣告）
-    const rows = Math.floor(buf.length / (3*4+3*4+4+4));
-    worker.postMessage({buffer:buf.buffer, vertexCount:rows});
+        // 2. 告訴 worker 換資料（rowLength 已在 main() 前宣告）
+        const rows = Math.floor(buf.length / (3*4+3*4+4+4));
+        worker.postMessage({buffer:buf.buffer, vertexCount:rows});
     }
     // =================================================== 監聽 <select id="objectSelect"> ===================================================
     document.getElementById("objectSelect")
@@ -1094,6 +1116,7 @@ async function main() {
     );
 
     let startX, startY, down;
+    /*
     canvas.addEventListener("mousedown", (e) => {
         carousel = false;
         e.preventDefault();
@@ -1101,6 +1124,7 @@ async function main() {
         startY = e.clientY;
         down = e.ctrlKey || e.metaKey ? 2 : 1;
     });
+    */
     canvas.addEventListener("contextmenu", (e) => {
         carousel = false;
         e.preventDefault();
@@ -1108,7 +1132,7 @@ async function main() {
         startY = e.clientY;
         down = 2;
     });
-
+    /*
     canvas.addEventListener("mousemove", (e) => {
         e.preventDefault();
         if (down == 1) {
@@ -1151,7 +1175,7 @@ async function main() {
         startX = 0;
         startY = 0;
     });
-
+    */
     let altX = 0,
         altY = 0;
     /*
@@ -1282,7 +1306,7 @@ async function main() {
         if (activeKeys.includes("ArrowUp")) {
             if (shiftKey) {
                 inv = translate4(inv, 0, -0.03, 0);
-            } else {
+            } else if(pivotDistance > minZoom){
                 inv = translate4(inv, 0, 0, 0.1);
                 pivotDistance -= 0.1;
                 console.log(pivotDistance);
@@ -1291,7 +1315,7 @@ async function main() {
         if (activeKeys.includes("ArrowDown")) {
             if (shiftKey) {
                 inv = translate4(inv, 0, 0.03, 0);
-            } else {
+            } else if(pivotDistance < maxZoom){
                 inv = translate4(inv, 0, 0, -0.1);
                 pivotDistance += 0.1; // 增加旋轉半徑
                 console.log(pivotDistance);
