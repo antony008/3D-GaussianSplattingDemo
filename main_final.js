@@ -1154,6 +1154,7 @@ async function main() {
 
     let altX = 0,
         altY = 0;
+    /*
     canvas.addEventListener(
         "touchstart",
         (e) => {
@@ -1250,7 +1251,7 @@ async function main() {
         },
         { passive: false },
     );
-
+    */
     let jumpDelta = 0;
     let vertexCount = 0;
 
