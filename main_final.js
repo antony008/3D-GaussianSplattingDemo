@@ -156,7 +156,7 @@ let cameras = [
 ];
 
 let camera = cameras[0];
-
+//決定相機位置(上方)
 function getProjectionMatrix(fx, fy, width, height) {
     const znear = 0.2;
     const zfar = 200;
@@ -779,46 +779,24 @@ const pivotDistances = {
     12: 2.6,
     13: 1.9
 };
+//新加入
+let currentModelIdx = 0;                               // 目前模型
+let pivotDistance   = pivotDistances[currentModelIdx]; // 與舊變數同名
+let viewMatrix      = defaultViewMatrices[currentModelIdx];
 
+/*
 const viewParam = new URLSearchParams(location.search).get("view");
 let pivotDistance = pivotDistances[viewParam] || pivotDistances[0];
 const defaultViewMatrix = defaultViewMatrices[viewParam] || defaultViewMatrices[0];
 let viewMatrix = defaultViewMatrix;
-
+*/
 
 async function main() {
-    let carousel = false;
-    const params = new URLSearchParams(location.search);
-    try {
-        viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
-        carousel = false;
-    } catch (err) {}
-    /*
-    const url = new URL(
-        urlFiles[viewParam] || urlFiles[0],
-        location.origin
-    );
-    */
-    const url = new URL(
-        (urlFiles[viewParam] || urlFiles[0]),
-        location.origin + location.pathname
-    );
-    const req = await fetch(url, {
-        mode: "cors", // no-cors, *cors, same-origin
-        credentials: "omit", // include, *same-origin, omit
-    });
-    console.log(req);
-    if (req.status != 200)
-        throw new Error(req.status + " Unable to load " + req.url);
-
+    const dpi        = Math.min(window.devicePixelRatio || 1, 3); // 最高 3，避免吃爆 VRAM
+    const downsample = 1 / dpi;   
+    let splatData = new Uint8Array(); 
     const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
-    const reader = req.body.getReader();
-    let splatData = new Uint8Array(req.headers.get("content-length"));
-
-    const downsample =
-        splatData.length / rowLength > 500000 ? 1 : 1 / devicePixelRatio;
-    console.log(splatData.length / rowLength, downsample);
-
+    let carousel = false;
     const worker = new Worker(
         URL.createObjectURL(
             new Blob(["(", createWorker.toString(), ")(self)"], {
@@ -826,6 +804,72 @@ async function main() {
             }),
         ),
     );
+    await switchModel(0);   // 取代原本初始 fetch 區塊
+    
+    //新加入
+    // ===================================================切換模型核心：讀新 .splat → 丟給 worker ===================================================
+    async function switchModel(idx){
+    currentModelIdx = idx;
+    pivotDistance   = pivotDistances[idx];
+    viewMatrix      = defaultViewMatrices[idx];
+
+    // 1. 抓檔
+    const resp = await fetch(urlFiles[idx], {mode:"cors", credentials:"omit"});
+    const buf  = new Uint8Array(await resp.arrayBuffer());
+
+    // 2. 告訴 worker 換資料（rowLength 已在 main() 前宣告）
+    const rows = Math.floor(buf.length / (3*4+3*4+4+4));
+    worker.postMessage({buffer:buf.buffer, vertexCount:rows});
+    }
+    // =================================================== 監聽 <select id="objectSelect"> ===================================================
+    document.getElementById("objectSelect")
+    .addEventListener("change", e=>{
+    const idx = parseInt(e.target.value, 10);
+    switchModel(idx).catch(err=>{
+        console.error(err);
+        document.getElementById("message").innerText = err;
+    });
+});
+
+
+
+    /*
+    const params = new URLSearchParams(location.search);
+    try {
+        viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+        carousel = false;
+    } catch (err) {}
+    
+    const url = new URL(
+        urlFiles[viewParam] || urlFiles[0],
+        location.origin
+    );
+    
+    const url = new URL(
+        (urlFiles[viewParam] || urlFiles[0]),
+        location.origin + location.pathname
+    );
+    
+    const req = await fetch(url, {
+        mode: "cors", // no-cors, *cors, same-origin
+        credentials: "omit", // include, *same-origin, omit
+    });
+    */
+    
+
+    // console.log(req);
+    // if (req.status != 200)
+    //     throw new Error(req.status + " Unable to load " + req.url);
+
+    // const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
+    // const reader = req.body.getReader();
+    // let splatData = new Uint8Array(req.headers.get("content-length"));
+
+    //const downsample = splatData.length / rowLength > 500000 ? 1 : 1 / devicePixelRatio;
+
+     //console.log(splatData.length / rowLength, downsample);
+
+    
 
     const canvas = document.getElementById("canvas");
     const fps = document.getElementById("fps");
@@ -910,8 +954,8 @@ async function main() {
 
         gl.uniform2fv(u_viewport, new Float32Array([innerWidth, innerHeight]));
 
-        gl.canvas.width = Math.round(innerWidth / downsample);
-        gl.canvas.height = Math.round(innerHeight / downsample);
+        gl.canvas.width  = Math.round(innerWidth  * dpi);   // ← 乘上 DPR
+        gl.canvas.height = Math.round(innerHeight * dpi);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         gl.uniformMatrix4fv(u_projection, false, projectionMatrix);
@@ -993,14 +1037,7 @@ async function main() {
             viewMatrix = getViewMatrix(cameras[currentCameraIndex]);
         }
         camid.innerText = "cam  " + currentCameraIndex;
-        if (e.code == "KeyV") {
-            location.hash =
-                "#" +
-                JSON.stringify(
-                    viewMatrix.map((k) => Math.round(k * 100) / 100),
-                );
-            camid.innerText = "";
-        } else if (e.code === "KeyP") {
+        if (e.code === "KeyP") {
             carousel = true;
             camid.innerText = "";
         }
@@ -1483,12 +1520,12 @@ async function main() {
         }
     };
 
-    window.addEventListener("hashchange", (e) => {
-        try {
-            viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
-            carousel = false;
-        } catch (err) {}
-    });
+    // window.addEventListener("hashchange", (e) => {
+    //     try {
+    //         viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+    //         carousel = false;
+    //     } catch (err) {}
+    // });
 
     const preventDefault = (e) => {
         e.preventDefault();
@@ -1507,34 +1544,34 @@ async function main() {
     let lastVertexCount = -1;
     let stopLoading = false;
 
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done || stopLoading) break;
+    // while (true) {
+    //     const { done, value } = await reader.read();
+    //     if (done || stopLoading) break;
 
-        splatData.set(value, bytesRead);
-        bytesRead += value.length;
+    //     splatData.set(value, bytesRead);
+    //     bytesRead += value.length;
 
-        if (vertexCount > lastVertexCount) {
-            if (!isPly(splatData)) {
-                worker.postMessage({
-                    buffer: splatData.buffer,
-                    vertexCount: Math.floor(bytesRead / rowLength),
-                });
-            }
-            lastVertexCount = vertexCount;
-        }
-    }
-    if (!stopLoading) {
-        if (isPly(splatData)) {
-            // ply file magic header means it should be handled differently
-            worker.postMessage({ ply: splatData.buffer, save: false });
-        } else {
-            worker.postMessage({
-                buffer: splatData.buffer,
-                vertexCount: Math.floor(bytesRead / rowLength),
-            });
-        }
-    }
+    //     if (vertexCount > lastVertexCount) {
+    //         if (!isPly(splatData)) {
+    //             worker.postMessage({
+    //                 buffer: splatData.buffer,
+    //                 vertexCount: Math.floor(bytesRead / rowLength),
+    //             });
+    //         }
+    //         lastVertexCount = vertexCount;
+    //     }
+    // }
+    // if (!stopLoading) {
+    //     if (isPly(splatData)) {
+    //         // ply file magic header means it should be handled differently
+    //         worker.postMessage({ ply: splatData.buffer, save: false });
+    //     } else {
+    //         worker.postMessage({
+    //             buffer: splatData.buffer,
+    //             vertexCount: Math.floor(bytesRead / rowLength),
+    //         });
+    //     }
+    // }
      //新增按鈕
 
     // 定義按鈕對應的按鍵
