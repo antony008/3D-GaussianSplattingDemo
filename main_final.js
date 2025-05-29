@@ -1641,6 +1641,14 @@ async function main() {
         }
     });
 
+    document.getElementById("btnReset").addEventListener("click", () => {
+        viewMatrix = defaultViewMatrices[currentModelIdx].slice(); // 重設視角
+        //viewMatrix = defaultViewMatrices[currentModelIdx];
+        pitchAccumulated = 0; // 重設仰俯角限制
+        pivotDistance = pivotDistances[currentModelIdx];
+        console.log("視角已重置");
+    });
+    
     // 按住按鍵
     function pressKey(key) {
         if (!activeKeys.includes(key)) {
