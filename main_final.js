@@ -811,7 +811,7 @@ const zoomLimits = {
 
 
 //新加入
-let currentModelIdx = 0;                               // 目前模型
+let currentModelIdx = 23;                               // 目前模型
 let pivotDistance   = pivotDistances[currentModelIdx]; // 與舊變數同名
 let viewMatrix      = defaultViewMatrices[currentModelIdx];
 let minZoom = 1.0;
@@ -839,7 +839,7 @@ async function main() {
             }),
         ),
     );
-    await switchModel(0);   // 取代原本初始 fetch 區塊
+    await switchModel(23);   // 取代原本初始 fetch 區塊
     
     //新加入
     // ===================================================切換模型核心：讀新 .splat → 丟給 worker ===================================================
